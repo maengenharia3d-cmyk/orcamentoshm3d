@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0E7A63">
+<title>OrçamentoHM3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: app de uma coluna, abas fixas no topo; resultado em "placa de impressão" com linhas de camada */
+:root{
+  --bg:#F3F5F2; --surface:#FFFFFF; --ink:#18201C; --muted:#5E6B64; --line:#DCE2DD;
+  --accent:#0E7A63; --accent-ink:#FFFFFF; --accent-soft:#DDF0EA; --input:#FFF8DC; --input-line:#E8D98F;
+  --bad:#B4412F; --plate:#16231E; --plate-ink:#EAF4EF; --plate-muted:#9FB8AD; --plate-line:rgba(255,255,255,.05);
+  --f-display:"Unbounded",system-ui,sans-serif; --f-body:"Figtree",system-ui,sans-serif; --f-num:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1512; --surface:#18201C; --ink:#E6EEE9; --muted:#97A69E; --line:#2A3530;
+  --accent:#3CC4A0; --accent-ink:#06231B; --accent-soft:#16352C; --input:#2A2716; --input-line:#5A5126;
+  --bad:#F08A76; --plate:#0A100D; --plate-ink:#EAF4EF; --plate-muted:#8FA99D; --plate-line:rgba(255,255,255,.04); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1512; --surface:#18201C; --ink:#E6EEE9; --muted:#97A69E; --line:#2A3530;
+  --accent:#3CC4A0; --accent-ink:#06231B; --accent-soft:#16352C; --input:#2A2716; --input-line:#5A5126;
+  --bad:#F08A76; --plate:#0A100D; --plate-ink:#EAF4EF; --plate-muted:#8FA99D; --plate-line:rgba(255,255,255,.04); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:14px 0;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand h1{font-family:var(--f-display);font-weight:700;font-size:20px;margin:0;letter-spacing:-.01em}
+.brand h1 span{color:var(--accent)}
+.status{font-size:12px;color:var(--muted)}
+nav.tabs{display:flex;gap:4px;margin-top:10px;overflow-x:auto}
+nav.tabs button{font:600 14px var(--f-body);color:var(--muted);background:none;border:0;padding:10px 12px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+section.panel{display:flex;flex-direction:column;gap:18px;padding-top:18px}
+.plate{background:var(--plate);color:var(--plate-ink);border-radius:14px;padding:18px;
+  background-image:repeating-linear-gradient(0deg,var(--plate-line) 0 1px,transparent 1px 4px);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.plate .k{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--plate-muted)}
+.plate .v{font-family:var(--f-num);font-weight:700;font-size:clamp(17px,4.6vw,26px);margin-top:4px;font-variant-numeric:tabular-nums}
+.plate .main .v{color:var(--accent)}
+.plate .sub{grid-column:1/-1;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;border-top:1px solid rgba(255,255,255,.12);padding-top:10px;font-size:13px;color:var(--plate-muted)}
+.plate .sub b{font-family:var(--f-num);color:var(--plate-ink)}
+@media (max-width:520px){.plate{grid-template-columns:1fr 1fr}.plate .main{grid-column:1/-1;order:-1}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card h2{font-family:var(--f-display);font-weight:500;font-size:14px;margin:0;display:flex;gap:10px;align-items:center;text-wrap:balance}
+.card h2 .n{font-family:var(--f-num);font-size:12px;color:var(--accent-ink);background:var(--accent);border-radius:6px;padding:2px 7px}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600;min-width:0}
+label.f small{font-weight:400;color:var(--muted);font-size:12px}
+input,select{font:500 15px var(--f-body);color:var(--ink);background:var(--input);border:1px solid var(--input-line);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
+input[type=number]{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.unit{position:relative}.unit input{padding-right:44px}.unit em{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-style:normal;font-size:12px;color:var(--muted);pointer-events:none}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.num,th.num{text-align:right;font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
+td small{display:block;color:var(--muted);font-size:12px;font-family:var(--f-body)}
+tr.total td{font-weight:700;border-bottom:0;border-top:2px solid var(--ink)}
+.tbl{overflow-x:auto}
+.edit td{padding:5px 4px}.edit input{padding:7px 8px;font-size:14px}
+.btn{font:600 14px var(--f-body);border-radius:8px;padding:10px 14px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.x{border:0;background:none;color:var(--muted);padding:6px 8px;font-size:18px;line-height:1}
+.btn.x:hover{color:var(--bad)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600}
+.empty{padding:18px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);text-align:center;font-size:14px}
+.pill{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+body{margin:0}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><h1>OrçamentoHM<span>3D</span></h1><span class="status" id="status">Salvo neste navegador</span></div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="calc" aria-selected="true">Calculadora de Preço</button>
+      <button role="tab" data-tab="mat" aria-selected="false">Cadastro de Materiais</button>
+      <button role="tab" data-tab="prod" aria-selected="false">Produtos</button>
+    </nav>
+  </header>
+
+  <!-- CALCULADORA -->
+  <section class="panel" id="p-calc">
+    <div class="plate" aria-live="polite">
+      <div><div class="k">Custo unitário</div><div class="v" id="r-custo">R$ 0,00</div></div>
+      <div class="main"><div class="k">Preço sugerido</div><div class="v" id="r-preco">R$ 0,00</div></div>
+      <div><div class="k">Lucro líquido unit.</div><div class="v" id="r-lucro">R$ 0,00</div></div>
+      <div class="sub"><span>Pedido: <b id="r-qtd">1</b> un.</span><span>Total do pedido <b id="r-tot">R$ 0,00</b></span><span>Lucro do pedido <b id="r-ltot">R$ 0,00</b></span></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">1</span>Projeto / Produto</h2>
+      <div class="grid2">
+        <label class="f">Nome do produto / peça<input id="c-nome" type="text" placeholder="Ex.: Chaveiro Flor"></label>
+        <label class="f">Quantidade encomendada<div class="unit"><input id="c-qtd" type="number" min="1" step="1" value="1"><em>un.</em></div></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">2</span>Impressão e insumos (por unidade)</h2>
+      <div class="grid2">
+        <label class="f">Filamento utilizado<select id="c-fil"></select></label>
+        <label class="f">Peso da peça + suportes<div class="unit"><input id="c-peso" type="number" min="0" step="0.01" value="93.82"><em>g</em></div><small>Gramas fatiadas no Bambu Studio</small></label>
+        <label class="f">Tempo de impressão<div class="unit"><input id="c-tempo" type="number" min="0" step="0.01" value="2.51"><em>h</em></div><small>4 h 30 min = 4,5</small></label>
+        <label class="f">Mão de obra (fatiar, pós, embalar)<div class="unit"><input id="c-mo" type="number" min="0" step="0.05" value="1"><em>h</em></div></label>
+      </div>
+      <div class="grid2" id="c-extras"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">3</span>Custos diretos e indiretos</h2>
+      <div class="tbl"><table><thead><tr><th>Item de custo</th><th class="num">R$</th></tr></thead><tbody id="c-custos"></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">4</span>Precificação, taxas e margem</h2>
+      <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+        <label class="f">Margem de lucro<div class="unit"><input id="c-margem" type="number" step="1" value="70"><em>%</em></div><small>Sobre o custo total</small></label>
+        <label class="f">Taxa da plataforma<div class="unit"><input id="c-taxa" type="number" step="0.5" value="0"><em>%</em></div><small>Shopee 14%, ML 11–19%</small></label>
+        <label class="f">Impostos / NF-e<div class="unit"><input id="c-imp" type="number" step="0.5" value="0"><em>%</em></div><small>MEI / Simples 6%</small></label>
+      </div>
+      <div class="tbl"><table><tbody id="c-preco"></tbody></table></div>
+      <div class="row"><button class="btn pri" id="c-salvar">Salvar em Produtos</button><button class="btn" id="c-limpar">Novo orçamento</button></div>
+    </div>
+  </section>
+
+  <!-- MATERIAIS -->
+  <section class="panel" id="p-mat" hidden>
+    <div class="card">
+      <h2><span class="n">1</span>Filamentos</h2>
+      <div class="tbl"><table class="edit"><thead><tr><th>Tipo / cor</th><th class="num">Preço rolo (R$)</th><th class="num">Peso rolo (g)</th><th class="num">R$/g</th><th></th></tr></thead><tbody id="m-fil"></tbody></table></div>
+      <div class="row"><button class="btn" id="m-fil-add">+ Adicionar filamento</button></div>
+    </div>
+    <div class="card">
+      <h2><span class="n">2</span>Embalagens e insumos</h2>
+      <div class="tbl"><table class="edit"><thead><tr><th>Item</th><th class="num">Custo unit. (R$)</th><th></th></tr></thead><tbody id="m-emb"></tbody></table></div>
+      <div class="row"><button class="btn" id="m-emb-add">+ Adicionar item</button></div>
+    </div>
+    <div class="card">
+      <h2><span class="n">3</span>Impressora e custos fixos</h2>
+      <div class="grid2">
+        <label class="f">Modelo da impressora<input id="k-imp" type="text"></label>
+        <label class="f">Consumo médio<div class="unit"><input id="k-watts" type="number" step="1"><em>W</em></div></label>
+        <label class="f">Tarifa de energia<div class="unit"><input id="k-tarifa" type="number" step="0.01"><em>R$/kWh</em></div></label>
+        <label class="f">Depreciação da máquina<div class="unit"><input id="k-deprec" type="number" step="0.1"><em>R$/h</em></div></label>
+        <label class="f">Valor da hora de trabalho<div class="unit"><input id="k-hora" type="number" step="0.5"><em>R$/h</em></div></label>
+        <label class="f">Margem de falhas / purgas<div class="unit"><input id="k-falhas" type="number" step="1"><em>%</em></div></label>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="n">4</span>Backup dos dados</h2>
+      <p class="hint">Os dados ficam salvos neste navegador. Exporte uma cópia para guardar ou para levar a outro aparelho, e importe lá.</p>
+      <div class="row"><button class="btn pri" id="b-exp">Exportar dados</button><button class="btn" id="b-imp">Importar dados</button><input type="file" id="b-file" accept=".json,application/json" hidden></div>
+    </div>
+  </section>
+
+  <!-- PRODUTOS -->
+  <section class="panel" id="p-prod" hidden>
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h2>Tabela de produtos <span class="pill" id="pr-count">0</span></h2><button class="btn pri" id="pr-add">+ Novo produto</button></div>
+      <input id="pr-busca" type="search" placeholder="Buscar produto…" style="background:var(--surface);border-color:var(--line)">
+      <div class="tbl"><table class="edit"><thead><tr><th>Produto</th><th class="num">Preço (R$)</th><th class="num">% lucro</th><th></th></tr></thead><tbody id="pr-list"></tbody></table></div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const brl=v=>(isFinite(v)?v:0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const n=v=>{const x=parseFloat(String(v).replace(",","."));return isFinite(x)?x:0};
+const uid=()=>Math.random().toString(36).slice(2,10);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const SEM="Sem embalagem ou insumo extra";
+
+let S={filamentos:[],embalagens:[],config:{impressora:"",watts:0,tarifa:0,deprec:0,horaMO:0,falhas:0},produtos:[]};
+const ref=null;
+
+/* ---------- salvar ---------- */
+let saveT=null, saving=false, again=false;
+function save(){clearTimeout(saveT);setStatus("Salvando…");saveT=setTimeout(flush,600)}
+async function flush(){
+  if(saving){again=true;return}
+  saving=true;
+  const body=JSON.parse(JSON.stringify(S));
+  try{
+    if(ref) await ref.set(body);
+    else localStorage.setItem("orc3d",JSON.stringify(body));
+    setStatus(ref?"Tudo salvo":"Salvo neste navegador");
+  }catch(e){setStatus("Não foi possível salvar. Verifique a conexão.")}
+  saving=false; if(again){again=false;flush()}
+}
+function setStatus(t){$("status").textContent=t}
+function toast(t){const el=$("toast");el.textContent=t;el.hidden=false;clearTimeout(el._t);el._t=setTimeout(()=>el.hidden=true,2200)}
+
+/* ---------- abas ---------- */
+document.querySelectorAll("nav.tabs button").forEach(b=>b.addEventListener("click",()=>show(b.dataset.tab)));
+function show(t){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
+  ["calc","mat","prod"].forEach(k=>$("p-"+k).hidden=k!==t);
+  try{localStorage.setItem("orc3d-tab",t)}catch(e){}
+}
+try{const t=localStorage.getItem("orc3d-tab");if(t)show(t)}catch(e){}
+
+/* ---------- calculadora ---------- */
+const CIDS=["c-nome","c-qtd","c-fil","c-peso","c-tempo","c-mo","c-margem","c-taxa","c-imp","c-x0","c-x1","c-x2","c-x3"];
+function buildExtras(){
+  $("c-extras").innerHTML=[0,1,2,3].map(i=>`<label class="f">Item extra ${i+1}<select id="c-x${i}"></select></label>`).join("");
+  [0,1,2,3].forEach(i=>$("c-x"+i).addEventListener("change",calc));
+}
+function fillSelects(){
+  const keep=id=>$(id).value;
+  const fv=keep("c-fil");
+  $("c-fil").innerHTML=S.filamentos.length?S.filamentos.map(f=>`<option value="${f.id}">${esc(f.nome)}</option>`).join(""):`<option value="">Cadastre um filamento</option>`;
+  if(S.filamentos.some(f=>f.id===fv))$("c-fil").value=fv;
+  [0,1,2,3].forEach(i=>{const s=$("c-x"+i),v=s.value;
+    s.innerHTML=`<option value="">${SEM}</option>`+S.embalagens.map(e=>`<option value="${e.id}">${esc(e.nome)} · ${brl(n(e.custo))}</option>`).join("");
+    if(S.embalagens.some(e=>e.id===v))s.value=v;});
+}
+function calc(){
+  const c=S.config, fil=S.filamentos.find(f=>f.id===$("c-fil").value);
+  const cpg=fil&&n(fil.peso)>0?n(fil.preco)/n(fil.peso):0;
+  const peso=n($("c-peso").value), tempo=n($("c-tempo").value), mo=n($("c-mo").value), qtd=Math.max(1,n($("c-qtd").value)||1);
+  const cFil=peso*cpg, cPerda=cFil*n(c.falhas), cEn=tempo*(n(c.watts)/1000)*n(c.tarifa), cDep=tempo*n(c.deprec), cMO=mo*n(c.horaMO);
+  const extras=[0,1,2,3].map(i=>S.embalagens.find(e=>e.id===$("c-x"+i).value)).filter(Boolean);
+  const cExt=extras.reduce((a,e)=>a+n(e.custo),0);
+  const custo=cFil+cPerda+cEn+cDep+cMO+cExt;
+  const margem=n($("c-margem").value)/100, taxa=n($("c-taxa").value)/100, imp=n($("c-imp").value)/100;
+  const base=custo*(1+margem), div=1-taxa-imp, preco=div>0?base/div:0, ret=preco*(taxa+imp), lucro=preco-ret-custo;
+  $("r-custo").textContent=brl(custo);$("r-preco").textContent=div>0?brl(preco):"Taxas ≥ 100%";$("r-lucro").textContent=brl(lucro);
+  $("r-qtd").textContent=qtd;$("r-tot").textContent=brl(preco*qtd);$("r-ltot").textContent=brl(lucro*qtd);
+  const row=(a,b,v)=>`<tr><td>${a}<small>${b}</small></td><td class="num">${brl(v)}</td></tr>`;
+  $("c-custos").innerHTML=
+    row("Filamento",`${peso} g × ${cpg.toFixed(4).replace(".",",")} R$/g`,cFil)+
+    row("Perdas, purgas AMS e falhas",`${(n(c.falhas)*100).toFixed(1).replace(".",",")}% do filamento`,cPerda)+
+    row("Energia elétrica",`${tempo} h × ${n(c.watts)} W × ${brl(n(c.tarifa))}/kWh`,cEn)+
+    row("Depreciação e manutenção",`${tempo} h × ${brl(n(c.deprec))}/h`,cDep)+
+    row("Mão de obra",`${mo} h × ${brl(n(c.horaMO))}/h`,cMO)+
+    (extras.length?extras.map(e=>row("Embalagem / insumo",esc(e.nome),n(e.custo))).join(""):row("Embalagem / insumo","Nenhum item extra",0))+
+    `<tr class="total"><td>Custo de produção total (por unidade)</td><td class="num">${brl(custo)}</td></tr>`;
+  $("c-preco").innerHTML=
+    row("Preço base com lucro","Custo × (1 + margem)",base)+
+    row("Preço final de venda","Preço base ÷ (1 − taxas − impostos)",preco)+
+    row("(−) Retido em taxas e impostos","Preço × (taxas + impostos)",ret)+
+    `<tr class="total"><td>Lucro líquido real (por unidade)</td><td class="num">${brl(lucro)}</td></tr>`+
+    `<tr><td>Lucro total do pedido<small>${qtd} un.</small></td><td class="num">${brl(lucro*qtd)}</td></tr>`;
+  calc.last={preco,margem};
+  try{const d={};CIDS.forEach(id=>d[id]=$(id).value);localStorage.setItem("orc3d-draft",JSON.stringify(d))}catch(e){}
+}
+buildExtras();
+["c-nome","c-qtd","c-peso","c-tempo","c-mo","c-margem","c-taxa","c-imp"].forEach(id=>$(id).addEventListener("input",calc));
+$("c-fil").addEventListener("change",calc);
+$("c-salvar").addEventListener("click",()=>{
+  const nome=$("c-nome").value.trim();
+  if(!nome){toast("Dê um nome ao produto antes de salvar");$("c-nome").focus();return}
+  const p=Math.round(calc.last.preco*100)/100, ex=S.produtos.find(x=>x.nome.trim().toLowerCase()===nome.toLowerCase());
+  if(ex){ex.preco=p;ex.lucro=calc.last.margem;toast("Produto atualizado: "+nome)}
+  else{S.produtos.push({id:uid(),nome,preco:p,lucro:calc.last.margem});toast("Adicionado em Produtos: "+nome)}
+  renderProd();save();
+});
+$("c-limpar").addEventListener("click",()=>{
+  $("c-nome").value="";$("c-qtd").value=1;["c-peso","c-tempo","c-mo"].forEach(id=>$(id).value=0);[0,1,2,3].forEach(i=>$("c-x"+i).value="");calc();$("c-nome").focus();
+});
+
+/* ---------- materiais ---------- */
+function renderMat(){
+  $("m-fil").innerHTML=S.filamentos.length?S.filamentos.map(f=>`<tr data-id="${f.id}">
+    <td><input data-k="nome" value="${esc(f.nome)}" aria-label="Nome do filamento"></td>
+    <td><input data-k="preco" type="number" step="0.01" value="${n(f.preco)}" aria-label="Preço do rolo"></td>
+    <td><input data-k="peso" type="number" step="1" value="${n(f.peso)}" aria-label="Peso do rolo"></td>
+    <td class="num" data-cpg>${n(f.peso)?(n(f.preco)/n(f.peso)).toFixed(4).replace(".",","):"—"}</td>
+    <td><button class="btn x" data-del title="Remover">×</button></td></tr>`).join(""):`<tr><td colspan="5"><div class="empty">Nenhum filamento ainda. Adicione o primeiro rolo abaixo.</div></td></tr>`;
+  $("m-emb").innerHTML=S.embalagens.length?S.embalagens.map(e=>`<tr data-id="${e.id}">
+    <td><input data-k="nome" value="${esc(e.nome)}" aria-label="Nome do item"></td>
+    <td><input data-k="custo" type="number" step="0.01" value="${n(e.custo)}" aria-label="Custo unitário"></td>
+    <td><button class="btn x" data-del title="Remover">×</button></td></tr>`).join(""):`<tr><td colspan="3"><div class="empty">Nenhuma embalagem ou insumo cadastrado.</div></td></tr>`;
+  const c=S.config;
+  $("k-imp").value=c.impressora||"";$("k-watts").value=n(c.watts);$("k-tarifa").value=n(c.tarifa);$("k-deprec").value=n(c.deprec);$("k-hora").value=n(c.horaMO);$("k-falhas").value=+(n(c.falhas)*100).toFixed(2);
+}
+function bindList(tb,arr,after){
+  $(tb).addEventListener("input",ev=>{const tr=ev.target.closest("tr[data-id]");if(!tr)return;
+    const it=S[arr].find(x=>x.id===tr.dataset.id);const k=ev.target.dataset.k;
+    it[k]=k==="nome"?ev.target.value:n(ev.target.value);after&&after(tr,it);fillSelects();calc();save();});
+  $(tb).addEventListener("click",ev=>{if(!ev.target.closest("[data-del]"))return;const tr=ev.target.closest("tr[data-id]");
+    const btn=ev.target.closest("[data-del]");
+    if(!btn.dataset.armed){btn.dataset.armed=1;btn.textContent="Remover?";btn.style.fontSize="13px";setTimeout(()=>{if(btn.isConnected){delete btn.dataset.armed;btn.textContent="×";btn.style.fontSize=""}},2500);return}
+    S[arr]=S[arr].filter(x=>x.id!==tr.dataset.id);renderAll();save();});
+}
+bindList("m-fil","filamentos",(tr,f)=>{tr.querySelector("[data-cpg]").textContent=n(f.peso)?(n(f.preco)/n(f.peso)).toFixed(4).replace(".",","):"—"});
+bindList("m-emb","embalagens");
+$("m-fil-add").addEventListener("click",()=>{S.filamentos.push({id:uid(),nome:"Novo filamento",preco:0,peso:1000});renderAll();save();const r=$("m-fil").querySelector("tr:last-child input");r&&r.select()});
+$("m-emb-add").addEventListener("click",()=>{S.embalagens.push({id:uid(),nome:"Novo item",custo:0});renderAll();save();const r=$("m-emb").querySelector("tr:last-child input");r&&r.select()});
+[["k-imp","impressora",v=>v],["k-watts","watts",n],["k-tarifa","tarifa",n],["k-deprec","deprec",n],["k-hora","horaMO",n],["k-falhas","falhas",v=>n(v)/100]]
+  .forEach(([id,k,f])=>$(id).addEventListener("input",e=>{S.config[k]=f(e.target.value);calc();save()}));
+
+/* ---------- produtos ---------- */
+function renderProd(){
+  const q=$("pr-busca").value.trim().toLowerCase();
+  const list=S.produtos.filter(p=>!q||p.nome.toLowerCase().includes(q));
+  $("pr-count").textContent=S.produtos.length;
+  $("pr-list").innerHTML=list.length?list.map(p=>`<tr data-id="${p.id}">
+    <td><input data-k="nome" value="${esc(p.nome)}" aria-label="Produto"></td>
+    <td style="width:120px"><input data-k="preco" type="number" step="0.01" value="${n(p.preco)}" aria-label="Preço"></td>
+    <td style="width:96px"><input data-k="lucro" type="number" step="1" value="${p.lucro===""||p.lucro==null?"":+(n(p.lucro)*100).toFixed(1)}" placeholder="—" aria-label="% de lucro"></td>
+    <td style="width:40px"><button class="btn x" data-del title="Remover">×</button></td></tr>`).join("")
+    :`<tr><td colspan="4"><div class="empty">${S.produtos.length?"Nenhum produto com esse nome.":"Nenhum produto ainda. Calcule um preço e toque em “Salvar em Produtos”, ou adicione aqui."}</div></td></tr>`;
+}
+$("pr-busca").addEventListener("input",renderProd);
+$("pr-list").addEventListener("input",ev=>{const tr=ev.target.closest("tr[data-id]");if(!tr)return;const p=S.produtos.find(x=>x.id===tr.dataset.id);const k=ev.target.dataset.k;
+  p[k]=k==="nome"?ev.target.value:k==="lucro"?(ev.target.value===""?null:n(ev.target.value)/100):n(ev.target.value);save();});
+$("pr-list").addEventListener("click",ev=>{const btn=ev.target.closest("[data-del]");if(!btn)return;
+  if(!btn.dataset.armed){btn.dataset.armed=1;btn.textContent="Remover?";btn.style.fontSize="13px";setTimeout(()=>{if(btn.isConnected){delete btn.dataset.armed;btn.textContent="×";btn.style.fontSize=""}},2500);return}
+  S.produtos=S.produtos.filter(x=>x.id!==btn.closest("tr").dataset.id);renderProd();save();});
+$("pr-add").addEventListener("click",()=>{$("pr-busca").value="";S.produtos.unshift({id:uid(),nome:"",preco:0,lucro:null});renderProd();save();$("pr-list").querySelector("input").focus()});
+
+/* ---------- carregar ---------- */
+function normalize(d){d=d||{};return{filamentos:d.filamentos||[],embalagens:d.embalagens||[],config:Object.assign({impressora:"",watts:0,tarifa:0,deprec:0,horaMO:0,falhas:0},d.config||{}),produtos:d.produtos||[]}}
+function renderAll(){renderMat();fillSelects();renderProd();calc()}
+let draftSel=null;try{draftSel=JSON.parse(localStorage.getItem("orc3d-draft")||"null")}catch(e){}
+if(draftSel)Object.entries(draftSel).forEach(([k,v])=>{if($(k)&&k!=="c-fil"&&!/^c-x/.test(k))$(k).value=v});
+renderAll();
+function applyDraftSel(){if(!draftSel)return;["c-fil","c-x0","c-x1","c-x2","c-x3"].forEach(k=>{const el=$(k);if(el&&[...el.options].some(o=>o.value===draftSel[k]))el.value=draftSel[k]});calc()}
+
+const PADRAO={"filamentos": [{"id": "f1", "nome": "Filamento Colorido PLA", "peso": 1000, "preco": 140}, {"id": "f2", "nome": "Filamento Colorido PETG", "peso": 1000, "preco": 98}], "embalagens": [{"custo": 1.7, "id": "e0", "nome": "Caixa Papelão Pequena"}, {"custo": 1.34, "id": "e1", "nome": "Caixa Sacola Craft"}, {"custo": 0.8, "id": "e2", "nome": "Tag"}, {"custo": 0.44, "id": "e3", "nome": "Corrente de Bolinha"}, {"custo": 0.5, "id": "e4", "nome": "Argola de Chaveiro"}, {"custo": 1.1, "id": "e5", "nome": "NFC"}, {"custo": 0.22, "id": "e6", "nome": "Cartela Tag para Chaveiro"}, {"custo": 19.13, "id": "e7", "nome": "Luz Luminária"}], "config": {"deprec": 1.5, "falhas": 0.08, "horaMO": 1, "impressora": "Bambu Lab A1", "tarifa": 0.95, "watts": 120}, "produtos": [{"id": "p000", "lucro": null, "nome": "Maçã Dia dos Professores", "preco": 14}, {"id": "p001", "lucro": null, "nome": "Maçã Dia dos Professores + Chaveiro", "preco": 18}, {"id": "p002", "lucro": null, "nome": "Chaveiros Simples", "preco": 6}, {"id": "p003", "lucro": null, "nome": "Chaveiro Bailarina", "preco": 18}, {"id": "p004", "lucro": null, "nome": "Chaveiro com Berloque", "preco": 8}, {"id": "p005", "lucro": null, "nome": "Chaveiro placa com Berloque", "preco": 8}, {"id": "p006", "lucro": null, "nome": "Chaveiro com Nome + Letra", "preco": 10}, {"id": "p007", "lucro": null, "nome": "Chaveiro Barbie", "preco": 10}, {"id": "p008", "lucro": null, "nome": "Casinha Natal  KIT com 5", "preco": 100}, {"id": "p009", "lucro": null, "nome": "Arvore Natal", "preco": 25.99}, {"id": "p010", "lucro": null, "nome": "Bandeja com Pé Decorativa Grande", "preco": 35}, {"id": "p011", "lucro": 0.7, "nome": "Bandeja Sem Pé Decorativa Grande 23x14x1,8", "preco": 35}, {"id": "p012", "lucro": null, "nome": "Bandeja Sem Pé Decorativa Paquena", "preco": 29.9}, {"id": "p013", "lucro": null, "nome": "Sagrada Familia", "preco": 19.9}, {"id": "p014", "lucro": null, "nome": "Kit Bandeja + Arvore de Natal + Sagrada familia", "preco": 79.9}, {"id": "p015", "lucro": null, "nome": "Kit Bandeja + Arvore de Natal + Feliz Natal", "preco": 79.9}, {"id": "p016", "lucro": null, "nome": "Arvore de Natal 3D Chaveiro", "preco": 12}, {"id": "p017", "lucro": null, "nome": "Quadro 3D", "preco": 39.9}, {"id": "p018", "lucro": null, "nome": "Suporte para quadro", "preco": 10}, {"id": "p019", "lucro": null, "nome": "Cubo Infinito Brinquedo", "preco": 24.99}, {"id": "p020", "lucro": null, "nome": "Kit avisão para montar Brinquedo", "preco": 27.99}, {"id": "p021", "lucro": null, "nome": "Furia da noite Banguela - Brinquedo articulado", "preco": 50}, {"id": "p022", "lucro": null, "nome": "Pikachu de montar", "preco": 24.99}, {"id": "p023", "lucro": null, "nome": "Chaminé de Natal", "preco": 105}, {"id": "p024", "lucro": null, "nome": "Chaminé de Natal - Vermelha", "preco": 162.9}, {"id": "p025", "lucro": null, "nome": "Guirlanda", "preco": 79.99}, {"id": "p026", "lucro": null, "nome": "Marca Pagina Dia dos professores", "preco": 8.9}, {"id": "p027", "lucro": null, "nome": "Chaveiro Flor", "preco": 9.9}, {"id": "p028", "lucro": null, "nome": "Casinha Unitaria", "preco": 25}, {"id": "p029", "lucro": null, "nome": "Amigurumi", "preco": 19.99}, {"id": "p030", "lucro": null, "nome": "Calango Retrovisor", "preco": 30}, {"id": "p031", "lucro": null, "nome": "Luminaria Farol", "preco": 109.9}, {"id": "p032", "lucro": null, "nome": "Chaveiro Farol Unid", "preco": 7.5}, {"id": "p033", "lucro": null, "nome": "Chaveiro Farol Unid acima de 25 Para Igreja", "preco": 5.5}, {"id": "p034", "lucro": null, "nome": "Porta Maternidade 20cm com Letra Inicial e Nome", "preco": 35.9}, {"id": "p035", "lucro": null, "nome": "Porta Maternidade 20cm com Letra Inicial vazada e Nome", "preco": 54.9}, {"id": "p036", "lucro": 0.75, "nome": "Chaveiro NFC Aline", "preco": 5.6}, {"id": "p037", "lucro": 1, "nome": "Chaveiro Lampada", "preco": 3.6}, {"id": "p038", "lucro": null, "nome": "Arvore 23cm", "preco": 59.99}, {"id": "p039", "lucro": 1, "nome": "Feliz Natal", "preco": 23.9}, {"id": "p040", "lucro": 0.4, "nome": "Chaveiro com NFC Karen acima de 33 unid", "preco": 5}, {"id": "p041", "lucro": 2.75, "nome": "Mini Jesus", "preco": 15}, {"id": "p042", "lucro": 1, "nome": "Kit 2 Renas", "preco": 29.9}, {"id": "p043", "lucro": 1, "nome": "Rena Unid", "preco": 15.9}, {"id": "p044", "lucro": 1, "nome": "Chaveiro kettlebell anel para guardar academia", "preco": 12.5}, {"id": "p045", "lucro": 1, "nome": "Suporte para carregador de Apple Watch", "preco": 24.5}, {"id": "p046", "lucro": 1, "nome": "Bandeja Redonda 20x20x2.0", "preco": 33.5}, {"id": "p047", "lucro": 1, "nome": "Bandeja Redonda 15x15x2.0", "preco": 29.9}, {"id": "p048", "lucro": 0.98, "nome": "Presepio", "preco": 64.9}, {"id": "p049", "lucro": 0.87, "nome": "Igreja de Velinha", "preco": 69.9}, {"id": "p050", "lucro": 0.98, "nome": "Aldeia de Inverno com função LED", "preco": 73.5}, {"id": "p051", "lucro": 1, "nome": "Porta ampola TG", "preco": 19.9}]};
+try{const raw=localStorage.getItem("orc3d");S=normalize(raw?JSON.parse(raw):JSON.parse(JSON.stringify(PADRAO)))}catch(e){S=normalize(JSON.parse(JSON.stringify(PADRAO)))}
+renderAll();applyDraftSel();setStatus("Salvo neste navegador");
+
+/* ---------- backup ---------- */
+$("b-exp").addEventListener("click",()=>{
+  const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download="orcamentohm3d-backup-"+new Date().toISOString().slice(0,10)+".json";
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast("Backup exportado");
+});
+$("b-imp").addEventListener("click",()=>$("b-file").click());
+$("b-file").addEventListener("change",async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{const d=JSON.parse(await f.text());
+    if(!d||!Array.isArray(d.filamentos)||!Array.isArray(d.produtos))throw 0;
+    S=normalize(d);renderAll();save();toast("Dados importados");
+  }catch(err){toast("Arquivo inválido. Use um backup exportado pelo app.")}
+  e.target.value="";
+});
+})();
+</script>
+</body>
+</html>
